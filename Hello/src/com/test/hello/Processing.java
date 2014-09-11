@@ -187,7 +187,12 @@ public class Processing {
 	}
 	
 	public static Boolean compareHSV(Mat img,Point center,Point[] plocate,Point[] nlocate){
-		
+		return true;
+	}
+	public static Mat medianBlur(Mat img){
+		Mat dst=new Mat();
+		Imgproc.medianBlur(img, dst, 5);
+		return dst;
 	}
 	public static Boolean compare(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		double[] average={0,0,0};

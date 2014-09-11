@@ -4,27 +4,22 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.provider.MediaStore;
-import android.util.Log;
-import android.widget.ImageView;
+
+
 
 public class WelcomeActivity extends Activity {
 	private MyHandler mHandler = null;
 	private Context mcontext=null;
-
 	
-	
+	/*
 	//OpenCV库加载并初始化成功后的回调函数  
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
@@ -32,7 +27,7 @@ public class WelcomeActivity extends Activity {
                 {
                     
                 	Log.i("TAG", "OpenCV loaded successfully");
-                    /* Now enable camera view to start receiving frames */
+                    
               
                 } break;
                 default:
@@ -41,8 +36,25 @@ public class WelcomeActivity extends Activity {
                 } break;
             }
         }
-    };
- 
+    }; 
+ */
+	 private BaseLoaderCallback iLoaderCallback = new BaseLoaderCallback(this) {
+
+	        @Override
+	        public void onManagerConnected(int status) {
+	            switch (status) {
+	                case LoaderCallbackInterface.SUCCESS:
+	                {
+	                   
+	                   
+	                } break;
+	                default:
+	                {
+	                    super.onManagerConnected(status);
+	                } break;
+	            }
+	        }
+	    };
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -86,8 +98,10 @@ public class WelcomeActivity extends Activity {
 	protected void onResume() {
 		// TODO Auto-generated method stub
 		super.onResume();
+		
 		   //load OpenCV engine and init OpenCV library  
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this, mLoaderCallback);
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, getApplicationContext(), iLoaderCallback);
+        //OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
 	}
 	
 	
