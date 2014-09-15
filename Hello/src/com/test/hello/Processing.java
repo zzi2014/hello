@@ -187,44 +187,61 @@ public class Processing {
 	}
 	
 	
-	public static Boolean compareHSV(Mat img,Point center,Point[] plocate,Point[] nlocate){
+	public static Boolean compareRGB(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		int flag=0;
+		double[] drgb={0,0,0};
 		List<Mat> list=new ArrayList<Mat>();
 		List<Mat> rgb=new ArrayList<Mat>();
+		Mat rhist=new Mat();
+		Mat ghist=new Mat();
+		Mat bhist=new Mat();
 		MatOfInt channels=new MatOfInt(0);
 		Mat hist=new Mat();
 		MatOfInt histSize=new MatOfInt(256);
 		MatOfFloat ranges=new MatOfFloat(0f,255f);
-		Mat dst=Mat.zeros(img.size(), img.type());
+	
 		Mat mask=Mat.zeros(img.size(), img.type());
 		Core.circle(mask,center,15,new Scalar(255),-1);
-		img.copyTo(dst, mask);
 		Core.split(img, rgb);
-		list.add(img);
-		
+		list.add(rgb.get(0));
+		Imgproc.calcHist(list, channels, mask, bhist, histSize, ranges);
+		list.clear();
+		list.add(rgb.get(1));
+		Imgproc.calcHist(list, channels, mask, ghist, histSize, ranges);
+		list.clear();
+		list.add(rgb.get(2));
+		Imgproc.calcHist(list, channels, mask, rhist, histSize, ranges);
+		list.clear();
+		Core.normalize(rhist, rhist, 0, 1, Core.NORM_MINMAX,-1);
+		Core.normalize(rhist, ghist, 0, 1, Core.NORM_MINMAX,-1);
+		Core.normalize(rhist, bhist, 0, 1, Core.NORM_MINMAX,-1);
+		for (int z=0;z<3;z++){
+		for (int i=0;i<255;i++){
+			double temp=0;
+			double[] histvalues=rhist.get(i, 0);
+			for (int j=0;j<histvalues.length;j++){
+				temp+=histvalues[j];
+			}
+			if (temp>drgb[z]) 
+				drgb[z]=temp;
+		}
+		}
 		return true;
 	}
-	
-<<<<<<< HEAD
+
 	//中值滤波
-=======
->>>>>>> origin/master
 	public static Mat medianBlur(Mat img){
 		Mat dst=new Mat();
 		Imgproc.medianBlur(img, dst, 5);
 		return dst;
 	}
 	
-<<<<<<< HEAD
+
 	//比较灰度
-=======
->>>>>>> origin/master
 	public static Boolean compare(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		double[] average={0,0,0};
 		int flag=0;
 		List<Mat> list = new ArrayList<Mat>();
-		
-		
         MatOfInt channels = new MatOfInt(0);
         Mat hist= new Mat();
         MatOfInt histSize = new MatOfInt(256);
