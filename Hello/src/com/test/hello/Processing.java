@@ -186,14 +186,19 @@ public class Processing {
 		return img4;
 	}
 	
+	
 	public static Boolean compareHSV(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		return true;
 	}
+	
+	//中值滤波
 	public static Mat medianBlur(Mat img){
 		Mat dst=new Mat();
 		Imgproc.medianBlur(img, dst, 5);
 		return dst;
 	}
+	
+	//比较灰度
 	public static Boolean compare(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		double[] average={0,0,0};
 		int flag=0;
@@ -283,6 +288,13 @@ public class Processing {
         else 
         	return false;
 	
+	}
+	
+	public static boolean compareColor(Mat img){
+		Mat dst=new Mat();
+		dst=Processing.medianBlur(img);
+		
+		return true;
 	}
 	
 }
