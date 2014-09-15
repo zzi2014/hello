@@ -187,17 +187,34 @@ public class Processing {
 	}
 	
 	public static Boolean compareHSV(Mat img,Point center,Point[] plocate,Point[] nlocate){
+		int flag=0;
+		List<Mat> list=new ArrayList<Mat>();
+		List<Mat> rgb=new ArrayList<Mat>();
+		MatOfInt channels=new MatOfInt(0);
+		Mat hist=new Mat();
+		MatOfInt histSize=new MatOfInt(256);
+		MatOfFloat ranges=new MatOfFloat(0f,255f);
+		Mat dst=Mat.zeros(img.size(), img.type());
+		Mat mask=Mat.zeros(img.size(), img.type());
+		Core.circle(mask,center,15,new Scalar(255),-1);
+		img.copyTo(dst, mask);
+		Core.split(img, rgb);
+		list.add(img);
+		
 		return true;
 	}
+	
 	public static Mat medianBlur(Mat img){
 		Mat dst=new Mat();
 		Imgproc.medianBlur(img, dst, 5);
 		return dst;
 	}
+	
 	public static Boolean compare(Mat img,Point center,Point[] plocate,Point[] nlocate){
 		double[] average={0,0,0};
 		int flag=0;
-		ArrayList<Mat> list = new ArrayList<Mat>();
+		List<Mat> list = new ArrayList<Mat>();
+		
 		
         MatOfInt channels = new MatOfInt(0);
         Mat hist= new Mat();
@@ -205,7 +222,7 @@ public class Processing {
         MatOfFloat ranges = new MatOfFloat(0f, 255f);
       
 		Mat dst=Mat.zeros(img.size(),img.type());
-		//提前中心区域
+		//提取中心区域
 		Mat mask = Mat.zeros(img.size(), CvType.CV_8UC1);
 		Core.circle(mask,center,15,new Scalar(255),-1);
 		img.copyTo(dst, mask);
