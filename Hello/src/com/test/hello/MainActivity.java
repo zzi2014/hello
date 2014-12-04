@@ -84,7 +84,7 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
 		mContext=this;
 		btnopen=(Button)findViewById(R.id.btnOpen);
 		btnre=(Button)findViewById(R.id.btnInit);
@@ -96,30 +96,34 @@ public class MainActivity extends Activity {
 		t4=(TextView)findViewById(R.id.textView4);
 		imageview =  (ImageView)findViewById(R.id.imgrew);  
 	    rectview=(ImageView)findViewById(R.id.rectView);
+
 	    t4.setText("");
-		 Intent intent = getIntent();
-	        value= intent.getStringExtra("selectFile");
-	        if (value==null)
-	        	value="/storage/sdcard0/DCIM/Camera/IMG_20140714_151303.jpg";
-	        
-     
-        //bm2=BitmapFactory.decodeFile(value,opts);
-        
-        if (ScanActivity.msBitmap!=null){
+		Intent intent = getIntent();
+	    value= intent.getStringExtra("selectFile");
+	   
+	    BitmapFactory.Options opts=new BitmapFactory.Options();
+		opts.inJustDecodeBounds=true;
+         if (ScanActivity.msBitmap!=null){
         	bm1=ScanActivity.msBitmap;
-        }
-        else{
-        	BitmapFactory.Options opts=new BitmapFactory.Options();
-    		opts.inJustDecodeBounds=true;
-            bm1=BitmapFactory.decodeFile(value,opts);
-            opts.inSampleSize=BitmapSimple.computeSampleSize(opts, 600, 800*600);
-            opts.inJustDecodeBounds=false;
-        	bm1=BitmapFactory.decodeFile(value,opts);
+         }
+         else{
+        	 if (value!=null){
+               bm1=BitmapFactory.decodeFile(value,opts);
+               opts.inSampleSize=BitmapSimple.computeSampleSize(opts, 600, 800*600);
+               opts.inJustDecodeBounds=false;
+        	   bm1=BitmapFactory.decodeFile(value,opts);
+        	}
+        	 else {
+                 bm1=BitmapFactory.decodeResource(getResources(), R.drawable.test, opts);
+                 opts.inSampleSize=BitmapSimple.computeSampleSize(opts, 600, 800*600);
+                 opts.inJustDecodeBounds=false;
+                 bm1=BitmapFactory.decodeResource(getResources(), R.drawable.test, opts);
+        	 }
         	   System.out.println("采样率:"+opts.inSampleSize);
-        }
-        bm2=Bitmap.createBitmap(bm1);
-        bm2=bm1.copy(Config.ARGB_8888, true);
-       
+         }
+         bm2=Bitmap.createBitmap(bm1);
+         bm2=bm1.copy(Config.ARGB_8888, true);
+	    
         //感兴趣区域bitmap
        // bm3=BitmapFactory.decodeFile("/storage/sdcard0/DCIM/Camera/IMG_20140714_151303.jpg",opts);
         imageview.setImageBitmap(bm1); 

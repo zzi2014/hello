@@ -27,8 +27,7 @@ public class WelcomeActivity extends Activity {
                 {
                     
                 	Log.i("TAG", "OpenCV loaded successfully");
-                    
-              
+
                 } break;
                 default:
                 {
@@ -89,7 +88,7 @@ public class WelcomeActivity extends Activity {
 		}
 		
 		public void handleMessage(Message msg) {
-			startActivity(new Intent(mcontext,MainActivity.class));
+			startActivity(new Intent(mcontext,OpenImageActivity.class));
 		    finish();
 		}
 	}

@@ -336,7 +336,6 @@ public class Processing {
         	return true;
         else 
         	return false;
-
 	}
 	
 	public static Boolean compareRGB(Mat img,Point center,Point[] plocate,Point[] nlocate){
@@ -470,6 +469,7 @@ public class Processing {
 		System.out.println("G"+drgb[1]);
 		average[2]=drgb;
 		drgb[0]=drgb[1]=drgb[2]=0;
+	
         //计算色差
 		double comA,comB;
 		comA=3*Math.pow((average[0][2]-average[1][2]),2)+4*Math.pow((average[0][1]-average[1][1]),2)+2*Math.pow((average[0][0]-average[1][0]),2);
@@ -516,7 +516,7 @@ public class Processing {
 		//计算直方图
 		double k=0.00000001;
 		Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
-		for (int i = 50; i< 200; i++) {
+		for (int i = 0; i< 255; i++) {
 		    double[] histValues = hist.get(i, 0);
 		    for (int j = 0; j < histValues.length; j++) {
 		        average[0]+=(i*histValues[j]);
@@ -542,7 +542,7 @@ public class Processing {
 		//计算直方图
 		Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
 		k=0.00000001;
-		for (int i = 50; i< 200; i++) {
+		for (int i = 0; i< 255; i++) {
 		    double[] histValues = hist.get(i, 0);
 		    for (int j = 0; j < histValues.length; j++) {
 		        average[1]+=(i*histValues[j]);
@@ -589,7 +589,6 @@ public class Processing {
 	public static boolean compareColor(Mat img){
 		Mat dst=new Mat();
 		dst=Processing.medianBlur(img);
-		
 		return true;
 	}
 	
