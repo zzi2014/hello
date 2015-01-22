@@ -7,5 +7,6 @@
     <string name="shot">Shot</string>
     <string name="save">保存图片</string>
     <string name="s1">save</string>
+    <string name="recover">recover</string>
 
 </resources>

@@ -37,23 +37,7 @@ public class WelcomeActivity extends Activity {
         }
     }; 
  */
-	 private BaseLoaderCallback iLoaderCallback = new BaseLoaderCallback(this) {
-
-	        @Override
-	        public void onManagerConnected(int status) {
-	            switch (status) {
-	                case LoaderCallbackInterface.SUCCESS:
-	                {
-	                   
-	                   
-	                } break;
-	                default:
-	                {
-	                    super.onManagerConnected(status);
-	                } break;
-	            }
-	        }
-	    };
+	 
     
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +54,7 @@ public class WelcomeActivity extends Activity {
 				// TODO Auto-generated method stub
 				mHandler = new MyHandler(Looper.getMainLooper());
 				try {
-					Thread.sleep(3000);
+					Thread.sleep(1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -88,7 +72,7 @@ public class WelcomeActivity extends Activity {
 		}
 		
 		public void handleMessage(Message msg) {
-			startActivity(new Intent(mcontext,OpenImageActivity.class));
+			startActivity(new Intent(mcontext,MainActivity.class));
 		    finish();
 		}
 	}
@@ -103,5 +87,21 @@ public class WelcomeActivity extends Activity {
         //OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this, mLoaderCallback);
 	}
 	
-	
+	private BaseLoaderCallback iLoaderCallback = new BaseLoaderCallback(this) {
+
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                   
+                   
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
 }

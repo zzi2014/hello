@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -31,7 +30,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
+
 
 
 public class ScanActivity extends Activity {
@@ -40,10 +39,8 @@ public class ScanActivity extends Activity {
 	private UserCamera uCamera=null;
 	private ImageView imgView;
 	private Button btnshot;
-	private View centerView;
 	public  static Bitmap msBitmap=null;
 	private Timer mTimer;
-	private ProgressDialog mProgressDialog = null;
 	String strResult=" ";
 	public Context mcontext=this;
 	private MyTimerTask mTimerTask;

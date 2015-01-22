@@ -15,7 +15,6 @@ public class BitmapSimple {
         } else {  
             roundedSize = (initialSize + 7) / 8 * 8;  
         }  
-  
         return roundedSize;  
     }  
       
@@ -28,7 +27,6 @@ public class BitmapSimple {
                 .sqrt(w * h / maxNumOfPixels));  
         int upperBound = (minSideLength == -1) ? 128 : (int) Math.min(  
                 Math.floor(w / minSideLength), Math.floor(h / minSideLength));  
-  
         if (upperBound < lowerBound) {  
             // return the larger one when there is no overlapping zone.  
             return lowerBound;  
