@@ -21,6 +21,97 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 public class Processing {
+	
+	public static int getHist(Mat img){
+		double[] average = { 0, 0, 0 };
+
+		List<Mat> list = new ArrayList<Mat>();
+		MatOfInt channels = new MatOfInt(0);
+		Mat hist = new Mat();
+		Mat dhist=new Mat();
+		MatOfInt histSize = new MatOfInt(256);
+		MatOfFloat ranges = new MatOfFloat(0f, 255f);
+		// 提取中心区域
+		Mat mask = Mat.zeros(img.size(), CvType.CV_8UC1);
+		System.out.println("mask: "+mask.size());
+		Core.rectangle(mask, new Point(28,28),  new Point(42,42),new Scalar(255), -1);
+		//提取中心区域以外区域
+		Mat dmask = Mat.zeros(img.size(), CvType.CV_8UC1);
+		Core.rectangle(dmask, new Point(10,10),  new Point(60,60),new Scalar(255), -1);
+		Core.rectangle(dmask, new Point(28,28),  new Point(42,42),new Scalar(0), -1);
+		for (int i=10;i<60;i++){
+			//System.out.println("");
+			for (int j=10;j<60;j++){
+			//	Log.v("mask","["+i+"]["+j+"]: "+dmask.get(i,j)[0]+" , "+"["+i+"]["+j+"]: "+mask.get(i,j)[0]+" ");
+			}
+			}
+		list.add(img);
+		// 计算直方图
+		double dk=0,k=0;
+		double  dl=0,l=0;
+		double k3=0;
+		double ysum=0;
+		Imgproc.calcHist(list, channels, dmask, dhist, histSize, ranges);
+		Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
+		for (int i = 0; i < 255; i++) {
+		    dl=l=0;
+			double[] histValues = hist.get(i, 0);
+			double[] dhistValues = dhist.get(i, 0);
+			double[] histvalue = new double[256];
+			for (int j = 0; j < histValues.length; j++) {
+				l+=histValues[j];
+				dl+=dhistValues[j];
+			}
+			histvalue[i]=dhist.get(i,0)[0]-3*hist.get(i,0)[0];
+			if (i<100){
+				ysum=ysum+histvalue[i];
+			}
+			Log.v("histvalue","i="+i+" ,l="+l+"____dl="+dl+"__r="+histvalue[i]);
+			if (k<l){
+				k=l;
+				average[0]=i;
+			}
+			if (dk<dl){
+				dk=dl;
+				average[1]=i;
+			}
+			if (k3<histvalue[i]){
+				k3=histvalue[i];
+				average[2]=i;
+			}
+		}
+		Log.v("k", "k=" + k);
+		Log.v("average", "data=" + average[0]);
+		Log.v("k1", "k1=" + dk);
+		Log.v("average1", "data1=" + average[1]);
+		Log.v("k3", "k3=" + k3);
+		Log.v("average2", "data2=" + average[2]);
+		if (ysum>=100&&average[0]<=120){
+			System.out.println("有阴影");
+			System.out.println("湿水泥");
+			return 0;
+			}
+		else if (ysum>=100&&average[0]>120) {
+			System.out.println("有阴影");
+			System.out.println("干水泥");
+			return 1;
+			}
+			else if (ysum<100&&average[0]<=120) {
+				System.out.println("没有阴影");
+				System.out.println("湿水泥");
+				return 2;
+			}
+			else if (ysum<100&&average[0]>120){
+				System.out.println("没有阴影");
+				System.out.println("干水泥");
+				return 3;
+			}
+			else return 4;
+		
+	}
+	
+	
+	
 	/*
 	 * 霍夫直线检测
 	 */
@@ -29,6 +120,7 @@ public class Processing {
 		Imgproc.HoughLinesP(thresholdImage, lines, 1, Math.PI / 180,
 				threshold + 1, 10, 0);
 		int a = 1;
+		//如果没有寻找到直线，继续寻找
 		while (lines.cols() == 0 && a < 20) {
 			Imgproc.HoughLinesP(thresholdImage, lines, 1, Math.PI / 180, a, 10,
 					0);
@@ -162,6 +254,7 @@ public class Processing {
 		contours.set(j, c2);
 		Imgproc.drawContours(img4, contours, j, new Scalar(255, 150, 100));
 		box = Imgproc.boundingRect(contours.get(j));
+		//获取中心点
 		center.x = 181 + box.x + box.width / 2;
 		center.y = 253 + box.y + box.height / 2;
 
@@ -186,16 +279,20 @@ public class Processing {
 		Mat vhist = new Mat();
 		MatOfInt channels = new MatOfInt(0);
 		List<Mat> hist = new ArrayList<Mat>();
-		MatOfInt histSize = new MatOfInt(256);
+		MatOfInt hhistSize = new MatOfInt(360);
+		MatOfInt histSize = new MatOfInt(255);
 		MatOfFloat ranges = new MatOfFloat(0f, 255f);
-		Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2HSV);
-		Mat mask = Mat.zeros(img.size(), img.type());
-		// 提取中心区域
-
-		Core.circle(mask, center, 15, new Scalar(255), -1);
+		MatOfFloat hranges = new MatOfFloat(0f, 360f);
+		Imgproc.cvtColor(img, img, Imgproc.COLOR_BGR2HSV_FULL);
 		Core.split(img, hsv);
+		Mat mask = Mat.zeros(hsv.get(0).size(), hsv.get(0).type());
+		// 提取中心区域
+		Core.circle(mask, center, 15, new Scalar(255), -1);
+		
+		
+		System.out.println("hsvtype"+hsv.get(0).type());
 		list.add(hsv.get(0));
-		Imgproc.calcHist(list, channels, mask, hhist, histSize, ranges);
+		Imgproc.calcHist(list, channels, mask, hhist, hhistSize, hranges);
 		list.clear();
 		list.add(hsv.get(1));
 		Imgproc.calcHist(list, channels, mask, shist, histSize, ranges);
@@ -203,28 +300,35 @@ public class Processing {
 		list.add(hsv.get(2));
 		Imgproc.calcHist(list, channels, mask, vhist, histSize, ranges);
 		list.clear();
-		Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
-		Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
-		Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+		//Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
+		//Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
+		//Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+		hist.add(hhist);
+		hist.add(shist);
+		hist.add(vhist);
 		// 取直方图中次数最多的值
 		for (int k = 0; k < 3; k++) {
 			double temp2 = 0;
-			for (int i = 0; i < 255; i++) {
+			for (int i = 0; i < 360; i++) {
 				double temp = 0;
+				if (i>=255&&k!=0)
+					break;
 				double[] histvalues = hist.get(k).get(i, 0);
-				for (int j = 0; j < histvalues.length; j++) {
-					temp += histvalues[j];
-				}
+				System.out.println("histvalue"+histvalues[0]+",i:"+i);
+				temp=histvalues[0];
 				if (temp > temp2) {
 					temp2 = temp;
 					dhsv[k] = i;
 				}
 			}
 		}
-		System.out.println("R:" + dhsv[2]);
-		System.out.println("B" + dhsv[0]);
-		System.out.println("G" + dhsv[1]);
-		average[0] = dhsv;
+		System.out.println("V:"+ dhsv[2]);
+		System.out.println("H" + dhsv[0]);
+		System.out.println("S" + dhsv[1]);
+		
+		average[0][0] = dhsv[0];
+		average[0][1] = dhsv[1];
+		average[0][2] = dhsv[2];
 		dhsv[0] = dhsv[1] = dhsv[2] = 0;
 
 		// 取4个方向上的检测区域
@@ -237,7 +341,7 @@ public class Processing {
 			hist.clear();
 			// 计算直方图
 			list.add(hsv.get(0));
-			Imgproc.calcHist(list, channels, mask, hhist, histSize, ranges);
+			Imgproc.calcHist(list, channels, mask, hhist, hhistSize, hranges);
 			list.clear();
 			list.add(hsv.get(1));
 			Imgproc.calcHist(list, channels, mask, shist, histSize, ranges);
@@ -245,14 +349,19 @@ public class Processing {
 			list.add(hsv.get(2));
 			Imgproc.calcHist(list, channels, mask, vhist, histSize, ranges);
 			list.clear();
-			Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
-			Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
-			Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+		//	Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
+			//Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
+			//Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+			hist.add(hhist);
+			hist.add(shist);
+			hist.add(vhist);
 			// 取直方图中次数最多的值
 			for (int k = 0; k < 3; k++) {
 				double temp2 = 0;
-				for (int i = 0; i < 255; i++) {
+				for (int i = 0; i < 360; i++) {
 					double temp = 0;
+					if (i>=255&&k!=0)
+						break;
 					double[] histvalues = hist.get(k).get(i, 0);
 					for (int j = 0; j < histvalues.length; j++) {
 						temp += histvalues[j];
@@ -263,10 +372,12 @@ public class Processing {
 					}
 				}
 			}
-			System.out.println("R:" + dhsv[2]);
-			System.out.println("B" + dhsv[0]);
-			System.out.println("G" + dhsv[1]);
-			average[1] = dhsv;
+			System.out.println("v:" + dhsv[2]);
+			System.out.println("h" + dhsv[0]);
+			System.out.println("s" + dhsv[1]);
+			average[1][0] = dhsv[0];
+			average[1][1] = dhsv[1];
+			average[1][2] = dhsv[2];
 			dhsv[0] = dhsv[1] = dhsv[2] = 0;
 
 			// negative locate
@@ -275,7 +386,7 @@ public class Processing {
 			Core.circle(mask, nlocate[z], 15, new Scalar(255), -1);
 			// 计算直方图
 			list.add(hsv.get(0));
-			Imgproc.calcHist(list, channels, mask, hhist, histSize, ranges);
+			Imgproc.calcHist(list, channels, mask, hhist, hhistSize, hranges);
 			list.clear();
 			list.add(hsv.get(1));
 			Imgproc.calcHist(list, channels, mask, shist, histSize, ranges);
@@ -283,14 +394,19 @@ public class Processing {
 			list.add(hsv.get(2));
 			Imgproc.calcHist(list, channels, mask, vhist, histSize, ranges);
 			list.clear();
-			Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
-			Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
-			Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+		//	Core.normalize(hhist, hhist, 0, 1, Core.NORM_MINMAX, -1);
+		//	Core.normalize(shist, shist, 0, 1, Core.NORM_MINMAX, -1);
+		//	Core.normalize(vhist, vhist, 0, 1, Core.NORM_MINMAX, -1);
+			hist.add(hhist);
+			hist.add(shist);
+			hist.add(vhist);
 			// 取直方图中次数最多的值
 			for (int k = 0; k < 3; k++) {
 				double temp2 = 0;
-				for (int i = 0; i < 255; i++) {
+				for (int i = 0; i < 360; i++) {
 					double temp = 0;
+					if (i>=255&&k!=0)
+						break;
 					double[] histvalues = hist.get(k).get(i, 0);
 					for (int j = 0; j < histvalues.length; j++) {
 						temp += histvalues[j];
@@ -301,19 +417,19 @@ public class Processing {
 					}
 				}
 			}
-			System.out.println("R:" + dhsv[2]);
-			System.out.println("B" + dhsv[0]);
-			System.out.println("G" + dhsv[1]);
-			average[2] = dhsv;
+			System.out.println("v:" + dhsv[2]);
+			System.out.println("h" + dhsv[0]);
+			System.out.println("s" + dhsv[1]);
+			average[2][0] = dhsv[0];
+			average[2][1] = dhsv[1];
+			average[2][2] = dhsv[2];
 			dhsv[0] = dhsv[1] = dhsv[2] = 0;
 			// 计算色差
 			double comA, comB;
-			comA = 3 * Math.pow((average[0][2] - average[1][2]), 2) + 4
-					* Math.pow((average[0][1] - average[1][1]), 2) + 2
-					* Math.pow((average[0][0] - average[1][0]), 2);
-			comB = 3 * Math.pow((average[0][2] - average[2][2]), 2) + 4
-					* Math.pow((average[0][1] - average[2][1]), 2) + 2
-					* Math.pow((average[0][0] - average[2][0]), 2);
+			comA =hsvc(average[0],average[2]);
+			comB = hsvc(average[1],average[2]);
+			System.out.println("hsvcoma:"+comA);
+			System.out.println("hsvcomb:"+comB);
 			if (comA > comB)
 				flag--;
 			else
@@ -326,7 +442,7 @@ public class Processing {
 		else
 			return false;
 	}
-
+	
 	public static Boolean compareRGB(Mat img, Point center, Point[] plocate,
 			Point[] nlocate) {
 		int flag = 0;
@@ -341,7 +457,7 @@ public class Processing {
 		List<Mat> hist = new ArrayList<Mat>();
 		MatOfInt histSize = new MatOfInt(256);
 		MatOfFloat ranges = new MatOfFloat(0f, 255f);
-		Mat mask = Mat.zeros(img.size(), img.type());
+		Mat mask = Mat.zeros(img.size(), CvType.CV_8UC1);
 		// 提取中心区域
 		Core.circle(mask, center, 15, new Scalar(255), -1);
 		Core.split(img, rgb);
@@ -354,12 +470,14 @@ public class Processing {
 		list.add(rgb.get(2));
 		Imgproc.calcHist(list, channels, mask, rhist, histSize, ranges);
 		list.clear();
+
 		Core.normalize(rhist, rhist, 0, 1, Core.NORM_MINMAX, -1);
 		Core.normalize(ghist, ghist, 0, 1, Core.NORM_MINMAX, -1);
 		Core.normalize(bhist, bhist, 0, 1, Core.NORM_MINMAX, -1);
-		hist.add(rhist);
+		
 		hist.add(ghist);
 		hist.add(bhist);
+		hist.add(rhist);
 		// 取直方图中次数最多的值
 		for (int k = 0; k < 3; k++) {
 			double temp2 = 0;
@@ -378,7 +496,9 @@ public class Processing {
 		System.out.println("R:" + drgb[2]);
 		System.out.println("B" + drgb[0]);
 		System.out.println("G" + drgb[1]);
-		average[0] = drgb;
+		average[0][0] = drgb[0];
+		average[0][1] = drgb[1];
+		average[0][2] = drgb[2];
 		drgb[0] = drgb[1] = drgb[2] = 0;
 
 		// 取4个方向上的检测区域
@@ -399,9 +519,14 @@ public class Processing {
 			list.add(rgb.get(2));
 			Imgproc.calcHist(list, channels, mask, rhist, histSize, ranges);
 			list.clear();
+
 			Core.normalize(rhist, rhist, 0, 1, Core.NORM_MINMAX, -1);
 			Core.normalize(rhist, ghist, 0, 1, Core.NORM_MINMAX, -1);
 			Core.normalize(rhist, bhist, 0, 1, Core.NORM_MINMAX, -1);
+		
+			hist.add(ghist);
+			hist.add(bhist);
+			hist.add(rhist);
 			// 取直方图中次数最多的值
 			for (int k = 0; k < 3; k++) {
 				double temp2 = 0;
@@ -420,7 +545,9 @@ public class Processing {
 			System.out.println("R:" + drgb[2]);
 			System.out.println("B" + drgb[0]);
 			System.out.println("G" + drgb[1]);
-			average[1] = drgb;
+			average[1][0] = drgb[0];
+			average[1][1] = drgb[1];
+			average[1][2] = drgb[2];
 			drgb[0] = drgb[1] = drgb[2] = 0;
 
 			// negative locate
@@ -437,9 +564,14 @@ public class Processing {
 			list.add(rgb.get(2));
 			Imgproc.calcHist(list, channels, mask, rhist, histSize, ranges);
 			list.clear();
+
 			Core.normalize(rhist, rhist, 0, 1, Core.NORM_MINMAX, -1);
 			Core.normalize(ghist, ghist, 0, 1, Core.NORM_MINMAX, -1);
 			Core.normalize(bhist, bhist, 0, 1, Core.NORM_MINMAX, -1);
+			
+			hist.add(ghist);
+			hist.add(bhist);
+			hist.add(rhist);
 			// 取直方图中次数最多的值
 			for (int k = 0; k < 3; k++) {
 				double temp2 = 0;
@@ -458,17 +590,21 @@ public class Processing {
 			System.out.println("R:" + drgb[2]);
 			System.out.println("B" + drgb[0]);
 			System.out.println("G" + drgb[1]);
-			average[2] = drgb;
+			average[2][0] = drgb[0];
+			average[2][1] = drgb[1];
+			average[2][2] = drgb[2];
 			drgb[0] = drgb[1] = drgb[2] = 0;
 
 			// 计算色差
 			double comA, comB;
-			comA = 3 * Math.pow((average[0][2] - average[1][2]), 2) + 4
-					* Math.pow((average[0][1] - average[1][1]), 2) + 2
-					* Math.pow((average[0][0] - average[1][0]), 2);
-			comB = 3 * Math.pow((average[0][2] - average[2][2]), 2) + 4
+			comA = 3 * Math.pow((average[0][2] - average[2][2]), 2) + 4
 					* Math.pow((average[0][1] - average[2][1]), 2) + 2
 					* Math.pow((average[0][0] - average[2][0]), 2);
+			System.out.println("comA:"+comA);
+			comB = 3 * Math.pow((average[2][2] - average[1][2]), 2) + 4
+					* Math.pow((average[2][1] - average[1][1]), 2) + 2
+					* Math.pow((average[2][0] - average[1][0]), 2);
+			System.out.println("comB:"+comB);
 			if (comA > comB)
 				flag--;
 			else
@@ -483,6 +619,15 @@ public class Processing {
 
 	}
 
+	public static double hsvc(double[] i,double[] j){
+		double d;
+		d=Math.sqrt((i[2]-j[2])*(i[2]-j[2])+Math.pow((i[1]*i[2]*Math.cos(i[0])-j[1]*j[2]*Math.cos(j[0])),2)
+				+Math.pow((i[1]*i[2]*Math.sin(i[0])-j[1]*j[2]*Math.sin(j[0])),2));
+		
+		//d=(i[0]-j[0])*(i[0]-j[0])+(i[1]-j[1])*(i[1]-j[1])+(i[2]-j[2])*(i[2]-j[2]);
+		return d;
+		
+	}
 	// 中值滤波
 	public static Mat medianBlur(Mat img) {
 		Mat dst = new Mat();
@@ -503,7 +648,6 @@ public class Processing {
 
 		Mat dst = Mat.zeros(img.size(), img.type());
 		// 提取中心区域
-
 		Mat mask = Mat.zeros(img.size(), CvType.CV_8UC1);
 		Core.circle(mask, center, 15, new Scalar(255), -1);
 		img.copyTo(dst, mask);
@@ -512,7 +656,8 @@ public class Processing {
 		int k=0;
 		int l=0;
 		Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
-		for (int i = 0; i < 250; i++) {
+		//Imgproc.equalizeHist(hist, hist);
+		for (int i = 0; i < 255; i++) {
 		    l=0;
 			double[] histValues = hist.get(i, 0);
 			for (int j = 0; j < histValues.length; j++) {
@@ -538,8 +683,9 @@ public class Processing {
 			// 计算直方图
 			//list.clear();
 			Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
+			//Imgproc.equalizeHist(hist, hist);
 			k = 0;
-			for (int i = 0; i < 250; i++) {
+			for (int i = 0; i < 255; i++) {
 				l=0;
 				double[] histValues = hist.get(i, 0);
 				for (int j = 0; j < histValues.length; j++) {
@@ -562,8 +708,9 @@ public class Processing {
 			Core.circle(mask, nlocate[z], 15, new Scalar(255), -1);
 			// 计算直方图
 			Imgproc.calcHist(list, channels, mask, hist, histSize, ranges);
+		//	Imgproc.equalizeHist(hist, hist);
 			k = 0;
-			for (int i = 0; i < 250; i++) {
+			for (int i = 0; i < 255; i++) {
 				l=0;
 				double[] histValues = hist.get(i, 0);
 				for (int j = 0; j < histValues.length; j++) {
@@ -592,12 +739,6 @@ public class Processing {
 		else
 			return false;
 
-	}
-
-	public static boolean compareColor(Mat img) {
-		Mat dst = new Mat();
-		dst = Processing.medianBlur(img);
-		return true;
 	}
 
 }

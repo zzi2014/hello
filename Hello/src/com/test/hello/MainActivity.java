@@ -17,13 +17,19 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 import android.app.Activity;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Vibrator;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,13 +42,31 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
+import com.baidu.location.BDLocation;
+import com.baidu.location.BDLocationListener;
+import com.baidu.location.LocationClient;
+import com.baidu.location.LocationClientOption;
+import com.baidu.location.BDNotifyListener;//假如用到位置提醒功能，需要import该类
+//如果使用地理围栏功能，需要import如下类
+import com.baidu.location.BDGeofence;
+import com.baidu.location.BDLocationStatusCodes;
+import com.baidu.location.GeofenceClient;
+import com.baidu.location.GeofenceClient.OnAddBDGeofencesResultListener;
+import com.baidu.location.GeofenceClient.OnGeofenceTriggerListener;
+import com.baidu.location.GeofenceClient.OnRemoveBDGeofencesResultListener;
+import com.baidu.location.LocationClientOption.LocationMode;
+
 public class MainActivity extends Activity {
+	 private LocationClient mLocationClient;
+	 public GeofenceClient mGeofenceClient;
+	 private BDLocation bdLocation;
 	 private ImageView imageview;  
 	 private ImageView rectview;  
 	 private Point center;
 	 private Bitmap bm1;//处理图像
 	 private Bitmap bm2;//原图像
 	 private Bitmap bm3;//ROI区域图像
+	 private Bitmap bmSgd;//闪光灯拍照图像
 	 private Mat img;
 	 private Mat img2;
 	 private Mat img3;
@@ -60,26 +84,46 @@ public class MainActivity extends Activity {
 	 private TextView t3;
 	 private TextView t4;
 	 int a=3 ,b=250;
+	 int rf=0;
 	 private String value="";
 	 private Button btnopen=null;
 	 private Button btnfind=null;
 	 private Button btnre=null;
 	 private Button btnCom=null;
+	 private Button btnGeo;
+	 private Button btnNotify;
+	 private Vibrator mVibrator;
+	 private NotifyLister mNotify;
+	 private double ld=0,la=0;
+	 
 
-	    
+		public class NotifyLister extends BDNotifyListener{
+		    public void onNotify(BDLocation mlocation, float distance){
+		    	mVibrator.vibrate(1000);//振动提醒已到设定位置附近
+		    	Toast.makeText(mContext, "震动提醒", Toast.LENGTH_SHORT).show();
+		    	mNotify.SetNotifyLocation(100,100,100,"bd09ll");
+		    }
+		}
+	 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-
+		mGeofenceClient = ((LocationApplication) getApplication()).mGeofenceClient;
+		mLocationClient = ((LocationApplication)getApplication()).mLocationClient;
+		((LocationApplication) getApplication()).mLocationClient.stop();
+		mLocationClient.start();
+		btnGeo=(Button)findViewById(R.id.btnGeo);
 		mContext=this;
+		mVibrator =(Vibrator)getApplicationContext().getSystemService(Service.VIBRATOR_SERVICE);
 		btnopen=(Button)findViewById(R.id.btnOpen);
 		btnre=(Button)findViewById(R.id.btnInit);
 		btnfind=(Button)findViewById(R.id.btnFind);
+		btnNotify=(Button)findViewById(R.id.btnNotify);
 		btnCom=(Button)findViewById(R.id.btnCom);
-		t1=(TextView)findViewById(R.id.textView1);
-		t2=(TextView)findViewById(R.id.textView2);
-		t3=(TextView)findViewById(R.id.textView3);
+		t1=(TextView)findViewById(R.id.loadingtv);
+		t2=(TextView)findViewById(R.id.usertv);
+		t3=(TextView)findViewById(R.id.pwtv);
 		t4=(TextView)findViewById(R.id.textView4);
 		imageview =  (ImageView)findViewById(R.id.imgrew);  
 	    rectview=(ImageView)findViewById(R.id.rectView);
@@ -87,32 +131,17 @@ public class MainActivity extends Activity {
 	    /*
 	     * 加载图片
 	     */
-		Intent intent = getIntent();
-	    value= intent.getStringExtra("selectFile");
-	   
-	    BitmapFactory.Options opts=new BitmapFactory.Options();
-		opts.inJustDecodeBounds=true;
-         if (ScanActivity.msBitmap!=null){
-        	bm1=ScanActivity.msBitmap;
-            bm2=Bitmap.createBitmap(bm1);
-            bm2=bm1.copy(Config.ARGB_8888, true); 
-            imageview.setImageBitmap(bm1); 
-         }
-         if (value!=null){
-               bm1=BitmapFactory.decodeFile(value,opts);
-               opts.inSampleSize=BitmapSimple.computeSampleSize(opts, 600, 800*600);
-               opts.inJustDecodeBounds=false;
-        	   bm1=BitmapFactory.decodeFile(value,opts);
-               bm2=Bitmap.createBitmap(bm1);
-               bm2=bm1.copy(Config.ARGB_8888, true); 
-               imageview.setImageBitmap(bm1); 
-               System.out.println("采样率:"+opts.inSampleSize);
-        	}
-  
+        	 bm1=BitmapFactory.decodeResource(getResources(), R.drawable.te);
+        	 bm2=Bitmap.createBitmap(bm1);
+             bm2=bm1.copy(Config.ARGB_8888, true); 
+             bmSgd=Bitmap.createBitmap(bm1);
+             bmSgd=bm1.copy(Config.ARGB_8888, true); 
+             imageview.setImageBitmap(bm1); 
         	  /*
         	   * 参数调节
         	   */
-				 seekbar = (SeekBar)findViewById(R.id.seekBar1);
+         /*
+		//		 seekbar = (SeekBar)findViewById(R.id.seekBar1);
 				 seekbar.setMax(255);
 				 seekbar.setProgress(250);
 				 seekbar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -145,7 +174,6 @@ public class MainActivity extends Activity {
         seekbar2 = (SeekBar)findViewById(R.id.seekBar2);
         seekbar2.setMax(20);
         seekbar2.setProgress(3);
-        
         seekbar2.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 			
 			@Override
@@ -173,15 +201,59 @@ public class MainActivity extends Activity {
 			} 
 		}
         );
-        
+        */
+	       
+	        
+	       
+	        
+         btnNotify.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				if (btnNotify.getText().toString().equals("开启位置提醒")){
+					mNotify = new NotifyLister();
+					try{
+					ld= mLocationClient.getLastKnownLocation().getLongitude();
+					la = mLocationClient.getLastKnownLocation().getLatitude();
+					}
+					catch(NullPointerException e){
+						ld=1.1;
+						la=1.2;
+					}
+					System.out.println("setnotify:ld="+ld+"  la="+la);
+					mNotify.SetNotifyLocation(la,ld, 500,"bd09ll");//4个参数代表要位置提醒的点的坐标，具体含义依次为：纬度，经度，距离范围，坐标系类型(gcj02,gps,bd09,bd09ll)
+					((LocationApplication) getApplication()).mNotify=mNotify;
+					btnNotify.setText("关闭位置提醒");
+				}
+				else{
+					btnNotify.setText("开启位置提醒");
+					mLocationClient.removeNotifyEvent(((LocationApplication) getApplication()).mNotify);
+				}
+			}
+		});
+         
+         btnGeo.setOnClickListener(new OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				startActivityForResult(new Intent(mContext,GeoFenceActivity.class),2);
+				//finish();
+			}
+		});
         //打开摄像头
         btnCom.setOnClickListener(new OnClickListener() {
 			
 			@Override
 			public void onClick(View v) {
+				InitLocation();
+				if (!mLocationClient.isStarted()){
+					mLocationClient.start();
+					System.out.println("mlc,Start.");
+				}
 				ScanActivity.msBitmap=null;
-				startActivity(new Intent(mContext,ScanActivity.class));
-	 			finish();
+				startActivityForResult(new Intent(mContext,ScanActivity.class),1);
 			}
 		});
         
@@ -200,24 +272,35 @@ public class MainActivity extends Activity {
 				 mcon=new Mat();
 				 center=new Point(181,253);
 				 //灰度化图像
-				 gray=Processing.procSrc2Gray(bm2);
+				 gray=Processing.procSrc2Gray(bm1);
 				 img=Processing.procSrc2Gray(bm1);
+				//	Imgproc.equalizeHist(gray, gray);
+				//	Imgproc.equalizeHist(img, img);
 				 Log.v("mat size", img.size().toString());
 				 //获取感兴趣区域
 				 img5=img.submat(new Rect(181,253,70,70));
 				 bm3=Bitmap.createBitmap(70, 70, Config.ARGB_8888);
-				 Utils.matToBitmap(img5, bm3);
+	
 				 Log.v("img5",img5.size().toString());
-				 //自适应二值化处理
-				 Imgproc.adaptiveThreshold(img5, img5, 100, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV,21, 1);
+				 //Processing.getHist(img5);
+				 //Processing.medianBlur(img5);
 				 int an=1;
 				 Mat element = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(an*2+1, an*2+1),new  Point(an, an));
 				 //形态学处理
+				
+				 //自适应二值化处理
+				 Imgproc.adaptiveThreshold(img5, img5, 50, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV,25, 1);
+			//	 Imgproc.morphologyEx(img5,img5,Imgproc.MORPH_BLACKHAT,element);
 				 Imgproc.morphologyEx(img5,img5,Imgproc.MORPH_CLOSE,element);
-				 Utils.matToBitmap(img5, bm3);
-				 rectview.setImageBitmap(bm3);
-				 Imgproc.adaptiveThreshold(img, img2, 100, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV,15, 1);
+				// Processing.medianBlur(img);
+				 //Imgproc.equalizeHist(img, img);
+				 Imgproc.adaptiveThreshold(img, img2, 50, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY_INV,25, 1);
+				// Imgproc.morphologyEx(img2,img2,Imgproc.MORPH_BLACKHAT,element);
 				 Imgproc.morphologyEx(img2,img2,Imgproc.MORPH_CLOSE,element);
+				
+				 Utils.matToBitmap(img5, bm3);
+				 //此处为感兴趣区域
+				 rectview.setImageBitmap(bm3);
 				 Utils.matToBitmap(img2, bm1);
 				 imageview.setImageBitmap(bm1);
 				 System.out.println("bm1:"+bm1.getWidth()+"*"+bm1.getHeight());
@@ -230,8 +313,7 @@ public class MainActivity extends Activity {
 	 		public void onClick(View arg0) { 
 	 			// TODO Auto-generated method stub
 	 			ScanActivity.msBitmap=null;
-	 			startActivity(new Intent(mContext,OpenImageActivity.class));
-	 			finish();
+	 			startActivityForResult(new Intent(mContext,OpenImageActivity.class),3);
 	 		}});
         
         //进行识别
@@ -239,6 +321,8 @@ public class MainActivity extends Activity {
 			 
 			@Override
 			public void onClick(View v) {
+				btnre.performClick();
+				
 				//感兴趣区域处理
 				img5=Processing.findlunkuo(img5,center);
 				mcon=img5.clone();
@@ -246,8 +330,6 @@ public class MainActivity extends Activity {
 				Processing.houghlinesp(mcon, lines, 5);
 				Utils.matToBitmap(mcon, bm3);
 				rectview.setImageBitmap(bm3);
-				
-				
 				List<MatOfPoint> contours = new ArrayList<MatOfPoint>();
 				Mat hierarchy = new Mat();
 				//定义轮廓抽取模式
@@ -296,21 +378,114 @@ public class MainActivity extends Activity {
 				nLocate=Processing.locate(img3,lines, center, 160);
 				Core.circle(img3, center, 10, new Scalar(244,12,23),-1);
 				Utils.matToBitmap(img3, bm1);
-				imageview.setImageBitmap(bm1);	
-				
-				
-				if(Processing.compare(gray, center, pLocate, nLocate)){
+				imageview.setImageBitmap(bm1);
+				Mat rgbimg=new Mat();
+				img2.convertTo(rgbimg, CvType.CV_8UC3);
+				Utils.bitmapToMat(bm2, rgbimg);
+				int an=1;
+				Mat element = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(an*2+1, an*2+1),new  Point(an, an));
+				Imgproc.morphologyEx(img,img,Imgproc.MORPH_DILATE,element); 
+				Imgproc.morphologyEx(rgbimg,rgbimg,Imgproc.MORPH_CLOSE,element);
+			    if(Processing.compare(gray, center, pLocate, nLocate)&&rf==3){
 					Toast.makeText(mContext, "result:true",Toast.LENGTH_LONG).show();
-					t4.setText("芯片识别结果：正确。");
+					t4.setText(t4.getText()+"\n芯片识别结果：正确。");
 					}
 				else {
 					Toast.makeText(mContext, "result:false", Toast.LENGTH_LONG).show();
-					t4.setText("芯片识别结果：错误。");
+					t4.setText(t4.getText()+"\n芯片识别结果：错误。");
 					}
+				if(Processing.compareRGB(rgbimg, center, pLocate, nLocate)&&rf==3){
+					Toast.makeText(mContext, "rgbresult:true",Toast.LENGTH_LONG).show();
+					t4.setText(t4.getText()+"\n芯片识别结果：正确。");
+					}
+				else {
+					Toast.makeText(mContext, "rgbresult:false", Toast.LENGTH_LONG).show();
+					t4.setText(t4.getText()+"\n芯片识别结果：错误。");
+					}
+				if(Processing.compareHSV(rgbimg, center, pLocate, nLocate)&&rf==3){
+					Toast.makeText(mContext, "hsvresult:true",Toast.LENGTH_LONG).show();
+					t4.setText(t4.getText()+"\n芯片识别结果：正确。");
+
+					}
+				else {
+					Toast.makeText(mContext, "hsvresult:false", Toast.LENGTH_LONG).show();
+					t4.setText(t4.getText()+"\n芯片识别结果：错误。");
+					}
+				
+				
+				
 			}
 		});
 	}
 	
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		// TODO Auto-generated method stub
+		super.onActivityResult(requestCode, resultCode, data);
+		if (resultCode==RESULT_OK){
+			//拍照完成后
+			if (requestCode==1){
+				if (btnNotify.getText().equals("关闭位置提醒")){
+					ld= mLocationClient.getLastKnownLocation().getLongitude();
+					la = mLocationClient.getLastKnownLocation().getLatitude();
+					System.out.println("setnotify:ld="+ld+"  la="+la);
+					mNotify.SetNotifyLocation(la,ld, 500,"bd09ll");//4个参数代表要位置提醒的点的坐标，具体含义依次为：纬度，经度，距离范围，坐标系类型(gcj02,gps,bd09,bd09ll)
+					((LocationApplication) getApplication()).mNotify=mNotify;
+				}
+				mLocationClient.registerNotify(((LocationApplication) getApplication()).mNotify);
+				mLocationClient.requestLocation();		
+				bdLocation=mLocationClient.getLastKnownLocation();
+				try{
+				t4.setText("定位位置:"+bdLocation.getAddrStr());}
+				catch(NullPointerException x){
+					System.out.println("nullpointerexception");
+				}
+		         if (ScanActivity.msBitmap!=null){
+		        	 bm1=ScanActivity.msBitmap;
+		             bm2=Bitmap.createBitmap(bm1);
+		             bm2=bm1.copy(Config.ARGB_8888, true); 
+		           //  imageview.setImageBitmap(bm1); 
+		          }
+		         if (ScanActivity.psBitmap!=null){
+		        	 bmSgd=ScanActivity.psBitmap;
+		        	 imageview.setImageBitmap(bmSgd);
+		         }
+		       //  mLocationClient.stop();
+			}
+			//返回打开的图片
+			if (requestCode==3){
+			
+			    value= data.getStringExtra("selectFile");
+			    BitmapFactory.Options opts=new BitmapFactory.Options();
+				opts.inJustDecodeBounds=true;
+		         if (ScanActivity.msBitmap!=null){
+		        	bm1=ScanActivity.msBitmap;
+		            bm2=Bitmap.createBitmap(bm1);
+		            bm2=bm1.copy(Config.ARGB_8888, true); 
+		            imageview.setImageBitmap(bm1); 
+		         }
+		         if (ScanActivity.psBitmap!=null){
+		        	 bmSgd=ScanActivity.psBitmap;
+		         }
+		         if (value!=null){
+		               bm1=BitmapFactory.decodeFile(value,opts);
+		               opts.inSampleSize=BitmapSimple.computeSampleSize(opts, 600, 854*600);
+		               opts.inJustDecodeBounds=false;
+		        	   bm1=BitmapFactory.decodeFile(value,opts);
+		        	  // bm1=BitmapFactory.decodeResource(getResources().getXml(),)
+		               bm2=Bitmap.createBitmap(bm1);
+		               bm2=bm1.copy(Config.ARGB_8888, true); 
+		               bmSgd=Bitmap.createBitmap(bm1);
+		               bmSgd=bm1.copy(Config.ARGB_8888, true); 
+		               imageview.setImageBitmap(bm1); 
+		               System.out.println("c采样率:"+opts.inSampleSize);
+		               //Toast.makeText(mContext, "3", Toast.LENGTH_LONG);
+		        	}
+			}
+		}
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -321,27 +496,58 @@ public class MainActivity extends Activity {
 	 @Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// TODO Auto-generated method stub
-		 String filename=Environment.getExternalStorageDirectory()+"/aphoto/"+System.currentTimeMillis()+"p.jpg";
+		 
 		 if (item.getItemId()==R.id.m1) {
+			 String filename=Environment.getExternalStorageDirectory()+"/aphoto/"+System.currentTimeMillis()+"p.jpg";
+			 String sfilename=Environment.getExternalStorageDirectory()+"/aphoto/"+"s"+System.currentTimeMillis()+"p.jpg";
 			 File dirfile = new File(Environment.getExternalStorageDirectory()+"/aphoto");
 			 if (!dirfile.exists())
 				 dirfile.mkdir();
 			 
 			 File file = new File(filename);
+			 File sfile = new File(sfilename);
 			 try {
 				 
 				bm2.compress(Bitmap.CompressFormat.JPEG, 100, new FileOutputStream(file));
-			
+				bmSgd.compress(Bitmap.CompressFormat.JPEG, 100, new FileOutputStream(sfile));
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
 			 Toast.makeText(mContext, "保存成功。保存路径："+filename, Toast.LENGTH_LONG).show();
 		 }
 		 else if (item.getItemId()==R.id.item1){
 			 imageview.setImageBitmap(bm2); 
 		 }
- 
+		 else if (item.getItemId()==R.id.item2sgd){
+			 Mat sgd=new Mat();
+			 Mat sgdMat=new Mat();
+			 Utils.bitmapToMat(bmSgd, sgd);
+			 Mat element = Imgproc.getStructuringElement(Imgproc.MORPH_RECT,new Size(1*2+1, 1*2+1),new  Point(1, 1));
+			 //形态学处理
+	         Imgproc.morphologyEx(sgd,sgd,Imgproc.MORPH_OPEN,element);
+			 sgdMat=sgd.submat(new Rect(181,253,70,70)).clone();
+			 bm3=Bitmap.createBitmap(70, 70, Config.ARGB_8888);
+			 sgdMat=Processing.procSrc2Gray(sgdMat);
+			 Utils.matToBitmap(sgdMat, bm3);
+			 rf=Processing.getHist(sgdMat);
+				if (rf==0){
+					t4.setText("有阴影,湿水泥");
+					}
+				else if (rf==1) {
+					t4.setText("有阴影,干水泥");
+					}
+					else if (rf==2) {
+						t4.setText("没有阴影,湿水泥");
+					}
+					else if (rf==3){
+						t4.setText("没有阴影,干水泥");
+					}
+				
+			 rectview.setImageBitmap(bm3);
+		 }
+		 
 		return super.onOptionsItemSelected(item);
 	}
 
@@ -351,5 +557,16 @@ public class MainActivity extends Activity {
 	        super.onResume();  
 	     
 	    }  
+	
+	private void InitLocation(){
+		LocationClientOption option = new LocationClientOption();
+		option.setLocationMode(LocationMode.Hight_Accuracy);//设置定位模式
+		option.setCoorType("bd09ll");//返回的定位结果是百度经纬度，默认值gcj02
+		option.setScanSpan(5000);//设置发起定位请求的间隔时间为5000ms
+		option.setIsNeedAddress(true);//返回的定位结果包含地址信息
+		option.setNeedDeviceDirect(true);//返回的定位结果包含手机机头的方向
+		//option.setOpenGps(true);
+		mLocationClient.setLocOption(option);
+	}
 
 }

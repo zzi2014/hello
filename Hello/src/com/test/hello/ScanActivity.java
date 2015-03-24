@@ -1,7 +1,7 @@
 package com.test.hello;
 
 /**
- * 扫描二维码活动
+ * 扫描界面
  */
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -21,15 +21,19 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.graphics.Bitmap.CompressFormat;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.Size;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 
 
 
@@ -40,8 +44,10 @@ public class ScanActivity extends Activity {
 	private ImageView imgView;
 	private Button btnshot;
 	public  static Bitmap msBitmap=null;
+	public  static Bitmap psBitmap=null;
 	private Timer mTimer;
 	String strResult=" ";
+	boolean ishot=false;
 	public Context mcontext=this;
 	private MyTimerTask mTimerTask;
 	public int detLeft,detTop,detWidth,detHeight=0;
@@ -63,11 +69,11 @@ public class ScanActivity extends Activity {
 		height=480;
     	System.out.println(p.x+" dfsdf "+p.y);
     	
-		uCamera = new UserCamera(surfaceview.getHolder(), width, height,
-				previewCallback);
+	uCamera = new UserCamera(surfaceview.getHolder(), width, height,
+				new MyPictureCallback(),previewCallback);
 		mTimer = new Timer();
 		mTimerTask = new MyTimerTask();
-		mTimer.schedule(mTimerTask, 50, 800);
+		//mTimer.schedule(mTimerTask, 2000, 800);
 		btnshot.setOnClickListener(new OnClickListener() {
 			
 			@Override
@@ -75,26 +81,12 @@ public class ScanActivity extends Activity {
 				// TODO Auto-generated method stub
 				mTimer.cancel();
 				uCamera.sCamera.cancelAutoFocus();
+				ishot=true;
+				Parameters para=uCamera.sCamera.getParameters();
+			//	para.setFlashMode(Parameters.FLASH_MODE_ON);
+				uCamera.sCamera.setParameters(para);
 				uCamera.AutoFocusAndPreviewCallback();
-				Intent intent=new Intent(mcontext,MainActivity.class);
-				File file = new File(Environment.getExternalStorageDirectory(), "pp.jpg");
-				System.out.println(file.toString());
-				FileOutputStream outStream;
-				if (ScanActivity.msBitmap!=null)
-				try {
-					outStream = new FileOutputStream(file);
-					ScanActivity.msBitmap.compress(CompressFormat.JPEG, 100, outStream);
-					outStream.close();
-			
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				startActivity(intent);
-				finish();	   
+				
 			}
 		});
 	
@@ -106,12 +98,51 @@ public class ScanActivity extends Activity {
 	class MyTimerTask extends TimerTask {
 		@Override
 		public void run() {
-
+			Parameters para=uCamera.sCamera.getParameters();
+			para.setFlashMode(Parameters.FLASH_MODE_TORCH);
+			uCamera.sCamera.setParameters(para);
 			uCamera.AutoFocusAndPreviewCallback();
 			
 		}
 	}
 
+	 public final class MyPictureCallback implements PictureCallback {  
+		  
+	        @Override  
+	        public void onPictureTaken(byte[] data, Camera camera) {  
+	        		Camera.Parameters parameters = uCamera.sCamera.getParameters();
+	        	    Size size = parameters.getPreviewSize();
+	            	psBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+			   	    System.out.println(psBitmap.getWidth()+"x"+psBitmap.getHeight());
+			   	    Matrix matrix = new Matrix();  
+		            matrix.reset();  
+		            matrix.setRotate(90);  
+					psBitmap=Bitmap.createBitmap(psBitmap, 0, 0, size.width, size.height, matrix, true);
+					//显示灰度图
+					imgView.setImageBitmap(psBitmap);	
+					System.out.println("bitmapwide:"+psBitmap.getWidth()+"heigh"+psBitmap.getHeight());
+					Intent intent=new Intent(mcontext,MainActivity.class);
+					File file = new File(Environment.getExternalStorageDirectory(), "pp.jpg");
+					System.out.println(file.toString());
+					FileOutputStream outStream;
+					if (ScanActivity.psBitmap!=null&&ishot){
+					try {
+						outStream = new FileOutputStream(file);
+						ScanActivity.psBitmap.compress(CompressFormat.JPEG, 100, outStream);
+						outStream.close();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					setResult(RESULT_OK,intent);
+					finish();	   
+
+					}
+	        } 
+	    }  
 	/**
 	 *  自动对焦后输出图片
 	 */
@@ -119,7 +150,7 @@ public class ScanActivity extends Activity {
 		@Override
 		public void onPreviewFrame(byte[] data, Camera arg1) {
 			//取得指定范围的帧的数据
-			System.out.println("take photo:"+data.length);
+					System.out.println("take photo:"+data.length);
 			        Camera.Parameters parameters = uCamera.sCamera.getParameters();
 			        Size size = parameters.getPreviewSize();
 			        YuvImage image = new YuvImage(data, parameters.getPreviewFormat(),
@@ -136,6 +167,24 @@ public class ScanActivity extends Activity {
 					//显示灰度图
 					imgView.setImageBitmap(msBitmap);	
 					System.out.println("bitmapwide:"+msBitmap.getWidth()+"heigh"+msBitmap.getHeight());
+					
+					File file = new File(Environment.getExternalStorageDirectory(), "p.jpg");
+					System.out.println(file.toString());
+					FileOutputStream outStream;
+					if (msBitmap!=null&&ishot){
+					try {
+						outStream = new FileOutputStream(file);
+					msBitmap.compress(CompressFormat.JPEG, 100, outStream);
+						outStream.close();
+					} catch (FileNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
+					}
 		}
 	};
 

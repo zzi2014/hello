@@ -1,5 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/m1" android:title="@string/save"></item>
     <item android:id="@+id/item1" android:title="@string/recover"></item>
+    <item android:id="@+id/item2sgd" android:title="@string/sgdText"></item>
 
 </menu>

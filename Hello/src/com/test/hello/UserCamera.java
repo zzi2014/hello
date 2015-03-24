@@ -5,9 +5,13 @@ package com.test.hello;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.Size;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
@@ -15,13 +19,14 @@ public class UserCamera implements SurfaceHolder.Callback{
 	public Camera sCamera=null;
 	private SurfaceHolder holder = null;
     private int width,height;
+    private Camera.PictureCallback pictureCallback;
     private Camera.PreviewCallback previewCallback;
-    
-    public UserCamera(SurfaceHolder holder,int w,int h,Camera.PreviewCallback previewCallback) {
+    public UserCamera(SurfaceHolder holder,int w,int h,Camera.PictureCallback pictureCallback,Camera.PreviewCallback previewCallback) {
 		this.holder = holder;  
 		this.holder.addCallback(this);  
         width=w;
         height=h;
+        this.pictureCallback=pictureCallback;
         this.previewCallback=previewCallback;
 	}
     
@@ -59,10 +64,13 @@ public class UserCamera implements SurfaceHolder.Callback{
 		      //  cameraView.setLayoutParams(new LinearLayout.LayoutParams( bestWidth,bestHeight));
 		    }
 		} 
-		        
+	
+	    Size size = parameters.getPreviewSize();
         //parameters.setPreviewSize(480,854);//设置尺寸  
         parameters.setPictureFormat(ImageFormat.JPEG);
-        parameters.setPictureSize(this.width, this.height); // 设置保存的图片尺寸
+        parameters.setPictureSize(size.width, size.height); // 设置保存的图片尺寸
+      //parameters.setFlashMode(Parameters.FLASH_MODE_ON);
+        parameters.setFocusMode(Parameters.FOCUS_MODE_MACRO);
         sCamera.setParameters(parameters);  
         sCamera.startPreview();//开始预览
         Log.e("Camera","surfaceChanged");
@@ -107,10 +115,29 @@ public class UserCamera implements SurfaceHolder.Callback{
 			// TODO Auto-generated method stub
 			 if (success) {  //对焦成功，回调Camera.PreviewCallback
 				 System.out.println("call back focus");
-	            	sCamera.setOneShotPreviewCallback(previewCallback); 
-	            }  
+				 sCamera.setOneShotPreviewCallback(previewCallback);
+	            Timer timer=new Timer();
+	            timer.schedule(new mytask(), 1000);
+				Parameters para=sCamera.getParameters();
+				para.setFlashMode(Parameters.FLASH_MODE_ON);
+				sCamera.setParameters(para);
+				sCamera.takePicture(null, null, pictureCallback);
+	            }
+			 else {
+				 sCamera.cancelAutoFocus();
+				 sCamera.autoFocus(mAutoFocusCallBack);
+			 }
 		}
 	};
 	
+	private class mytask extends TimerTask{
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			//sCamera.setOneShotPreviewCallback(previewCallback); 
+		}
+		
+	}
 	
 }

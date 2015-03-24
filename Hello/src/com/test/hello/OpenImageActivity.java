@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -122,11 +123,13 @@ public class OpenImageActivity extends Activity {
 		 				else {	 					
 		 					if(allFileNames[numb].endsWith(".jpg")||allFileNames[numb].endsWith(".jpeg")||allFileNames[numb].endsWith(".gif")||allFileNames[numb].endsWith(".JPG")||allFileNames[numb].endsWith(".png")||allFileNames[numb].endsWith(".jpeg"))
 		 						{
-		 						Intent intent = new Intent();
+		 						
+
+		 		               Intent intent = new Intent();
 		 		                //Intent传�?参数
 		 		                intent.putExtra("selectFile", selectFile.getAbsolutePath());
 		 		                intent.setClass(mContext, MainActivity.class);
-		 		                startActivity(intent);
+		 		                setResult(RESULT_OK,intent);
 		 		                finish();
 		 						}
 		 					else Toast.makeText(mContext, "文件无法识别", Toast.LENGTH_SHORT).show();

@@ -14,7 +14,7 @@
         android:src="@drawable/dn" />
 
     <TextView
-        android:id="@+id/textView1"
+        android:id="@+id/loadingtv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/progressBar1"
@@ -29,8 +29,63 @@
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="26dp"
+        android:layout_toLeftOf="@+id/loadingtv" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
         android:layout_below="@+id/welImage"
-        android:layout_marginTop="110dp"
-        android:layout_toLeftOf="@+id/textView1" />
+        android:layout_marginTop="60dp"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp" >
+
+            <TextView
+                android:id="@+id/usertv"
+                android:layout_width="66dp"
+                android:layout_height="42dp"
+                android:text="@string/user"
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/useret"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/pwtv"
+                android:layout_width="wrap_content"
+                android:layout_height="43dp"
+                android:layout_weight="1.09"
+                android:text="@string/password"
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/pwet"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="11.16"
+                android:inputType="textPassword" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/loginBtn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/progressBar1"
+        android:layout_centerHorizontal="true"
+        android:text="@string/Login" />
 
 </RelativeLayout>
